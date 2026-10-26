@@ -1,0 +1,26 @@
+<!DOCTYPE html><html><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Test modelli</title></head>
+<body style="font:16px sans-serif;background:#000814;color:#cff4ff;padding:20px">
+<button id="go" style="font-size:16px;padding:12px">Prova i modelli</button>
+<pre id="out" style="white-space:pre-wrap">Tocca il pulsante.</pre>
+<script>
+const out=document.getElementById('out');
+const modelli=['gemini-3.5-flash-lite','gemini-3.1-flash-lite','gemini-3.5-flash','gemini-flash-lite-latest','gemini-flash-latest'];
+async function prova(m){
+  const t0=performance.now();
+  let esito;
+  try{
+    const ac=new AbortController();
+    const to=setTimeout(()=>ac.abort(),45000);
+    const r=await fetch('https://generativelanguage.googleapis.com/v1beta/models/'+m+':generateContent?key='+encodeURIComponent(localStorage.getItem('key')||''),{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({contents:[{role:'user',parts:[{text:'Rispondi solo: ok'}]}]}),signal:ac.signal});
+    clearTimeout(to);
+    const j=await r.json();
+    esito=r.ok?'FUNZIONA':'errore: '+String((j.error&&j.error.message)||r.status).slice(0,60);
+  }catch(e){esito='errore: '+(e.name==='AbortError'?'oltre 45 s':e.message);}
+  out.textContent+='\n'+m+' -> '+((performance.now()-t0)/1000).toFixed(1)+' s, '+esito;
+}
+document.getElementById('go').onclick=async()=>{
+  out.textContent='Provo '+modelli.length+' modelli...';
+  for(const m of modelli)await prova(m);
+  out.textContent+='\n\nFine. Fai uno screenshot.';
+};
+</script></body></html>
